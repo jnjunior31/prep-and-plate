@@ -48,3 +48,10 @@ h2{font-family:Georgia,serif;font-weight:500;font-size:clamp(1.6rem,3vw,2.6rem);
 @media(max-width:1050px){.week-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.meal-library,.shopping-columns{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){.app-shell{padding:16px}.topbar,.sync-card{grid-template-columns:1fr}.tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible;gap:8px}.tab{width:100%;padding:10px 8px}.section-head{align-items:flex-start;flex-direction:column}.week-grid,.meal-library,.shopping-columns,.prep-list,.recipe-columns{grid-template-columns:1fr}.day-card{padding:16px}.subhead{font-size:.96rem}.recipe-dialog{max-height:96vh}.recipe-sheet{padding:24px 18px}.recipe-close{right:12px;top:12px}.recipe-stats{display:grid}.meal-card footer{align-items:flex-start;flex-direction:column}.inline-form{flex-direction:column}.connected-controls{grid-template-columns:1fr}.sync-card.connected.expanded{padding:14px}.sync-card.connected p{max-width:230px}}
 @media print{.tabs,.actions,.protein-card,.store-toggle-row,.secondary,.primary{display:none!important}.panel{display:block!important;page-break-after:always}.app-shell{max-width:none;padding:0}.week-grid{grid-template-columns:repeat(2,1fr)}body{background:white}.day-card,.meal-card,.store-card,.prep-item{box-shadow:none}}
+
+.serving-control{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px}
+.serving-control>span{font-size:.72rem;color:var(--muted);font-weight:700}
+.serving-stepper{display:grid;grid-template-columns:28px 30px 28px;align-items:center;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:white}
+.serving-stepper button{width:28px;height:28px;border:0;background:var(--accent-soft);color:var(--accent);font-size:1rem;font-weight:800;line-height:1}
+.serving-stepper button:disabled{opacity:.35;cursor:not-allowed}
+.serving-stepper output{text-align:center;font-size:.8rem;font-weight:800;color:var(--ink)}
