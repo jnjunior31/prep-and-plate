@@ -1,4 +1,6 @@
 const DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const SERVING_TYPES=['breakfast','lunch','dinner'];
+const DEFAULT_SERVINGS=5;
 const SUPABASE_URL='https://tvwaldmnlcucqlmaqteu.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable__seNOWj61jtMOze5TMCRfA_vISD16Bk';
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
@@ -74,7 +76,22 @@ const defaults={
   Sunday:{breakfast:'pancakes',lunch:'leftovers',dinner:'turkey-chili',snack:'shake'}
 };
 
-let state=JSON.parse(localStorage.getItem('prepPlateState')||'null') || {week:defaults,target:180,checks:{},stores:['Costco','Trader Joe\'s','Fred Meyer']};
+function freshServings(){
+  return Object.fromEntries(DAYS.map(day=>[day,Object.fromEntries(SERVING_TYPES.map(type=>[type,DEFAULT_SERVINGS]))]));
+}
+function normalizeServingCount(value){
+  return Math.min(10,Math.max(1,Number.parseInt(value,10)||DEFAULT_SERVINGS));
+}
+function ensureServingState(){
+  const fallback=freshServings();
+  state.servings=state.servings||{};
+  DAYS.forEach(day=>{
+    state.servings[day]={...fallback[day],...(state.servings[day]||{})};
+    SERVING_TYPES.forEach(type=>{state.servings[day][type]=normalizeServingCount(state.servings[day][type]);});
+  });
+}
+let state=JSON.parse(localStorage.getItem('prepPlateState')||'null') || {week:defaults,target:180,checks:{},stores:['Costco','Trader Joe\'s','Fred Meyer'],servings:freshServings()};
+ensureServingState();
 
 function save(){
   localStorage.setItem('prepPlateState',JSON.stringify(state));
@@ -142,7 +159,7 @@ async function loadSharedState(){
 }
 async function pushPlannerState(){
   if(!currentHousehold)return;
-  const data={week:state.week,target:state.target,stores:state.stores};
+  const data={week:state.week,target:state.target,stores:state.stores,servings:state.servings};
   const {error}=await supabaseClient.from('planner_state').upsert({household_id:currentHousehold.id,data});
   if(error)setSyncStatus(`Could not sync the planner: ${error.message}`,'error');
 }
@@ -194,6 +211,33 @@ function dayProtein(dayIndex){
   const d=DAYS[dayIndex], s=state.week[d];
   return mealById[s.breakfast].protein + getEffectiveLunch(dayIndex).protein + mealById[s.dinner].protein + mealById[s.snack].protein;
 }
+function recipePlanFor(dayIndex,type){
+  const day=DAYS[dayIndex];
+  const people=type==='snack'?1:state.servings[day][type];
+  if(type==='dinner'){
+    const meal=mealById[state.week[day].dinner];
+    const nextDay=DAYS[dayIndex+1];
+    const extraLunches=meal.tags.includes('leftover')&&nextDay&&state.week[nextDay].lunch==='leftovers'
+      ? state.servings[nextDay].lunch : 0;
+    return {
+      count:people+extraLunches,
+      label:extraLunches?`${people} for dinner + ${extraLunches} for lunch`:`${people} ${people===1?'person':'people'}`,
+      dinnerPeople:people,
+      extraLunches
+    };
+  }
+  if(type==='lunch'&&state.week[day].lunch==='leftovers'&&dayIndex>0){
+    const previousDay=DAYS[dayIndex-1];
+    const dinnerPeople=state.servings[previousDay].dinner;
+    return {
+      count:dinnerPeople+people,
+      label:`${dinnerPeople} for dinner + ${people} for lunch`,
+      dinnerPeople,
+      extraLunches:people
+    };
+  }
+  return {count:people,label:`${people} ${people===1?'person':'people'}`,dinnerPeople:people,extraLunches:0};
+}
 function renderWeek(){
   const grid=document.getElementById('weekGrid');grid.innerHTML='';
   DAYS.forEach((day,i)=>{
@@ -205,8 +249,25 @@ function renderWeek(){
       sel.innerHTML=optionsFor(type);
       sel.value=state.week[day][type];
       sel.addEventListener('change',e=>{state.week[day][type]=e.target.value;save();renderAll();});
+      if(type!=='snack'){
+        const servingControl=document.createElement('div');
+        servingControl.className='serving-control';
+        servingControl.innerHTML=`<span>People</span><div class="serving-stepper"><button type="button" class="serving-minus" aria-label="Serve fewer people">−</button><output aria-live="polite">${state.servings[day][type]}</output><button type="button" class="serving-plus" aria-label="Serve more people">+</button></div>`;
+        const changeServings=amount=>{
+          state.servings[day][type]=normalizeServingCount(state.servings[day][type]+amount);
+          servingControl.querySelector('output').textContent=state.servings[day][type];
+          servingControl.querySelector('.serving-minus').disabled=state.servings[day][type]===1;
+          servingControl.querySelector('.serving-plus').disabled=state.servings[day][type]===10;
+          save();renderShopping();
+        };
+        servingControl.querySelector('.serving-minus').addEventListener('click',()=>changeServings(-1));
+        servingControl.querySelector('.serving-plus').addEventListener('click',()=>changeServings(1));
+        servingControl.querySelector('.serving-minus').disabled=state.servings[day][type]===1;
+        servingControl.querySelector('.serving-plus').disabled=state.servings[day][type]===10;
+        sel.closest('.slot').appendChild(servingControl);
+      }
       const recipeBtn=document.createElement('button');recipeBtn.className='recipe-link';recipeBtn.type='button';recipeBtn.textContent='View recipe';
-      recipeBtn.addEventListener('click',()=>openRecipe(type==='lunch' ? getEffectiveLunch(i).id : state.week[day][type]));
+      recipeBtn.addEventListener('click',()=>openRecipe(type==='lunch' ? getEffectiveLunch(i).id : state.week[day][type],recipePlanFor(i,type)));
       sel.closest('.slot').appendChild(recipeBtn);
     });
     const note=node.querySelector('.leftover-note');
@@ -227,17 +288,48 @@ function renderLibrary(){
     wrap.appendChild(el);
   });
 }
-function openRecipe(id){
+function recipeBaseCount(serves){
+  return Number.parseInt(String(serves).match(/\d+/)?.[0]||'1',10);
+}
+function parseAmount(token){
+  const fractions={'¼':.25,'½':.5,'¾':.75,'⅓':1/3,'⅔':2/3,'⅛':.125,'⅜':.375,'⅝':.625,'⅞':.875};
+  const unicode=token.match(/^([0-9]+)?([¼½¾⅓⅔⅛⅜⅝⅞])$/);
+  if(unicode)return Number(unicode[1]||0)+fractions[unicode[2]];
+  if(token.includes('/')){
+    const [wholeOrTop,bottom]=token.split('/');
+    return Number(wholeOrTop)/Number(bottom);
+  }
+  return Number(token);
+}
+function formatAmount(value){
+  const rounded=Math.round(value*100)/100;
+  return Number.isInteger(rounded)?String(rounded):String(rounded).replace(/0+$/,'').replace(/\.$/,'');
+}
+function scaleIngredient(ingredient,factor){
+  if(Math.abs(factor-1)<.01)return ingredient;
+  const amount='(?:\\d+(?:\\.\\d+)?(?:/\\d+)?[¼½¾⅓⅔⅛⅜⅝⅞]?|[¼½¾⅓⅔⅛⅜⅝⅞])';
+  const match=ingredient.match(new RegExp(`^(${amount})(?:\\s*[–-]\\s*(${amount}))?`));
+  if(!match)return ingredient;
+  const first=formatAmount(parseAmount(match[1])*factor);
+  const second=match[2]?`–${formatAmount(parseAmount(match[2])*factor)}`:'';
+  return first+second+ingredient.slice(match[0].length);
+}
+function openRecipe(id,plan=null){
   const meal=mealById[id],recipe=recipes[id];if(!meal||!recipe)return;
   document.getElementById('recipeType').textContent=meal.type.toUpperCase();
   document.getElementById('recipeTitle').textContent=meal.name;
   document.getElementById('recipeDescription').textContent=meal.desc;
-  document.getElementById('recipeStats').innerHTML=`<span><strong>Portion plan:</strong> ${recipe.serves}</span><span><strong>${recipe.time}</strong> total time</span><span><strong>~${meal.protein}g</strong> protein per serving</span>`;
+  const baseCount=recipeBaseCount(recipe.serves);
+  const scaleFactor=plan?.count?plan.count/baseCount:1;
+  const portionPlan=plan?.label||recipe.serves;
+  document.getElementById('recipeStats').innerHTML=`<span><strong>Portion plan:</strong> ${portionPlan}</span><span><strong>${recipe.time}</strong> total time</span><span><strong>~${meal.protein}g</strong> protein per serving</span>`;
   const isLeftover=meal.type==='dinner'&&meal.tags.includes('leftover');
   const callout=document.getElementById('leftoverCallout');
   callout.classList.toggle('no-leftovers',!isLeftover);
-  callout.innerHTML=isLeftover?'<strong>Cook dinner + tomorrow’s lunch</strong><span>Make all 4 servings—even if 2 feels like enough tonight. Pack the 2 lunch portions before serving dinner.</span>':'<strong>Make what you need today</strong><span>No next-day lunch is planned from this recipe unless you choose to make extra.</span>';
-  document.getElementById('recipeIngredients').innerHTML=recipe.ingredients.map(x=>`<li>${x}</li>`).join('');
+  callout.innerHTML=isLeftover
+    ? `<strong>Cook dinner + tomorrow’s lunch</strong><span>${plan?.extraLunches?`Make ${plan.dinnerPeople} dinner servings and pack ${plan.extraLunches} lunch ${plan.extraLunches===1?'portion':'portions'} before serving.`:'Make the dinner portions you selected. Add lunch portions when tomorrow is set to leftovers.'}</span>`
+    : '<strong>Make what you need today</strong><span>No next-day lunch is planned from this recipe unless you choose to make extra.</span>';
+  document.getElementById('recipeIngredients').innerHTML=recipe.ingredients.map(x=>`<li>${scaleIngredient(x,scaleFactor)}</li>`).join('');
   document.getElementById('recipeSteps').innerHTML=recipe.steps.map(x=>`<li>${x}</li>`).join('');
   document.getElementById('storageNote').innerHTML=`<strong>Store & reheat</strong><span>${recipe.storage}</span>`;
   document.getElementById('recipeDialog').showModal();
@@ -246,12 +338,20 @@ function shoppingData(){
   const counts={};
   DAYS.forEach((day,i)=>{
     const s=state.week[day];
-    const selected=[mealById[s.breakfast],getEffectiveLunch(i),mealById[s.dinner],mealById[s.snack]];
-    selected.forEach(m=>m.ingredients.forEach(([item,store])=>{
-      const key=store+'|'+item; counts[key]=(counts[key]||0)+1;
+    const selected=[
+      {meal:mealById[s.breakfast],servings:state.servings[day].breakfast},
+      {meal:getEffectiveLunch(i),servings:state.servings[day].lunch},
+      {meal:mealById[s.dinner],servings:state.servings[day].dinner},
+      {meal:mealById[s.snack],servings:1}
+    ];
+    selected.forEach(({meal,servings})=>meal.ingredients.forEach(([item,store])=>{
+      const key=store+'|'+item;
+      counts[key]=counts[key]||{uses:0,servings:0};
+      counts[key].uses+=1;
+      counts[key].servings+=servings;
     }));
   });
-  return Object.entries(counts).map(([key,count])=>{const [store,item]=key.split('|');return{store,item,count};});
+  return Object.entries(counts).map(([key,summary])=>{const [store,item]=key.split('|');return{store,item,...summary};});
 }
 function renderShopping(){
   const wrap=document.getElementById('shoppingList');wrap.innerHTML='';
@@ -261,7 +361,7 @@ function renderShopping(){
     if(!items.length) card.innerHTML+='<p>No items this week.</p>';
     items.forEach(x=>{
       const key=x.store+'|'+x.item; const row=document.createElement('label');row.className='shop-item'+(state.checks[key]?' checked':'');
-      row.innerHTML=`<input type="checkbox" ${state.checks[key]?'checked':''}><span>${x.item}<small>Appears in ${x.count} planned meal${x.count>1?'s':''}</small></span>`;
+      row.innerHTML=`<input type="checkbox" ${state.checks[key]?'checked':''}><span>${x.item}<small>Planned for ${x.servings} serving${x.servings===1?'':'s'} across ${x.uses} meal${x.uses===1?'':'s'}</small></span>`;
       row.querySelector('input').addEventListener('change',e=>{state.checks[key]=e.target.checked;save();pushShoppingCheck(key,e.target.checked);renderShopping();}); card.appendChild(row);
     });wrap.appendChild(card);
   });
@@ -282,7 +382,7 @@ function prepTasks(){
 function renderPrep(){
   const wrap=document.getElementById('prepList');wrap.innerHTML='';prepTasks().forEach(([title,desc],idx)=>{const row=document.createElement('label');row.className='prep-item';row.innerHTML=`<input type="checkbox"><div><strong>${title}</strong><p>${desc}</p></div>`;wrap.appendChild(row);});
 }
-function renderAll(){document.getElementById('proteinTarget').value=state.target;document.getElementById('proteinTargetLabel').textContent=state.target;renderWeek();renderLibrary();renderShopping();renderPrep();}
+function renderAll(){ensureServingState();document.getElementById('proteinTarget').value=state.target;document.getElementById('proteinTargetLabel').textContent=state.target;renderWeek();renderLibrary();renderShopping();renderPrep();}
 
 function generateWeek(){
   const breakfastPool=['overnight-oats','egg-box','protein-muffins','yogurt-bowl'];
@@ -299,7 +399,7 @@ function generateWeek(){
 document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active-panel'));btn.classList.add('active');document.getElementById(btn.dataset.tab).classList.add('active-panel');}));
 document.getElementById('proteinTarget').addEventListener('input',e=>{state.target=+e.target.value;document.getElementById('proteinTargetLabel').textContent=state.target;save();});
 document.getElementById('generateWeek').addEventListener('click',generateWeek);
-document.getElementById('resetWeek').addEventListener('click',()=>{state.week=JSON.parse(JSON.stringify(defaults));save();renderAll();});
+document.getElementById('resetWeek').addEventListener('click',()=>{state.week=JSON.parse(JSON.stringify(defaults));state.servings=freshServings();save();renderAll();});
 document.getElementById('mealTypeFilter').addEventListener('change',renderLibrary);document.getElementById('mealTagFilter').addEventListener('change',renderLibrary);
 document.getElementById('clearChecks').addEventListener('click',()=>{state.checks={};save();clearRemoteChecks();renderShopping();});document.getElementById('refreshPrep').addEventListener('click',renderPrep);
 document.querySelectorAll('.storeToggle').forEach(cb=>{cb.checked=state.stores.includes(cb.value);cb.addEventListener('change',()=>{state.stores=[...document.querySelectorAll('.storeToggle:checked')].map(x=>x.value);save();renderShopping();});});
