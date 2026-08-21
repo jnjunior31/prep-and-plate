@@ -33,6 +33,33 @@ const meals=[
 ];
 
 const mealById=Object.fromEntries(meals.map(m=>[m.id,m]));
+const recipes={
+  'overnight-oats':{serves:'1 jar',time:'5 min + chill',ingredients:['½ cup rolled oats','½ cup Fairlife milk','⅓ cup Greek yogurt','½ cup berries','Optional: ½ scoop protein powder'],steps:['Stir everything except the berries in a jar.','Cover and refrigerate overnight.','Add berries before eating.'],storage:'Keeps refrigerated for up to 4 days.'},
+  'egg-box':{serves:'1 breakfast',time:'5 min',ingredients:['2 hard-boiled eggs','1 Greek yogurt cup','1 piece of fruit'],steps:['Pack the eggs, yogurt, and fruit together.'],storage:'Keep chilled; use cooked eggs within 1 week.'},
+  'protein-muffins':{serves:'12 muffins',time:'30 min',ingredients:['2 cups protein pancake mix','2 eggs','1 cup milk','2 mashed bananas','1 cup berries or chocolate chips','Greek yogurt for serving'],steps:['Heat oven to 350°F and grease a 12-cup muffin pan.','Stir the mix, eggs, milk, and bananas until just combined. Fold in berries.','Divide into the pan and bake 16–20 minutes, until set.','Serve 2 muffins with Greek yogurt.'],storage:'Refrigerate 5 days or freeze up to 2 months.'},
+  pancakes:{serves:'4 people',time:'25 min',ingredients:['Pancake mix for 8 pancakes','Milk and eggs called for on package','6 eggs for the side','Fruit for serving'],steps:['Mix and cook pancakes according to the package.','Scramble or fry the eggs while the pancakes cook.','Serve with fruit and milk.'],storage:'Freeze extra pancakes between sheets of parchment.'},
+  'yogurt-bowl':{serves:'1 bowl',time:'5 min',ingredients:['1 cup Greek yogurt','½ cup berries','¼ cup granola','1 tsp chia seeds','Optional: 1 tbsp peanut butter'],steps:['Spoon yogurt into a bowl and add the toppings.'],storage:'Assemble just before eating so the granola stays crisp.'},
+  leftovers:{serves:'1 lunch',time:'5 min',ingredients:['1 packed serving from the previous dinner'],steps:['Reheat the reserved dinner serving until steaming hot, or enjoy cold when appropriate.'],storage:'Pack the lunch portion when cleaning up dinner.'},
+  'greek-cold-salad':{serves:'4 lunches',time:'25 min',ingredients:['1 cup dry quinoa','1 can chickpeas, drained','2 cups chopped kale','1 cup tomatoes','½ cup olives','½ cup feta','Optional: 2 cups cooked chicken','⅓ cup Greek dressing'],steps:['Cook quinoa, then spread it out to cool.','Massage kale with a spoonful of dressing.','Combine quinoa, chickpeas, vegetables, feta, and chicken.','Keep remaining dressing separate until serving.'],storage:'Refrigerate up to 4 days.'},
+  'turkey-wrap':{serves:'1 lunch',time:'5 min',ingredients:['1 large tortilla','4–5 oz turkey','1 slice cheese','Handful of greens','2 tbsp hummus','Fruit'],steps:['Spread hummus over the tortilla.','Layer turkey, cheese, and greens; roll tightly.','Serve with fruit.'],storage:'Wrap tightly and refrigerate up to 24 hours.'},
+  'sheet-chicken':{serves:'4: 2 dinner + 2 lunches',time:'45 min',ingredients:['2 lb chicken breasts or thighs','1½ lb potatoes, chopped','2 zucchini or 4 carrots, chopped','12 oz green beans or asparagus','2 tbsp olive oil','Garlic powder, paprika, salt, and pepper'],steps:['Heat oven to 425°F.','Toss potatoes with half the oil and seasoning; roast 15 minutes.','Add seasoned chicken and remaining vegetables to the pan.','Roast 20–25 minutes, until chicken reaches 165°F and vegetables are tender.','Before serving, pack 2 complete lunch portions.'],storage:'Refrigerate lunch portions up to 4 days; reheat until steaming.'},
+  'sheet-sausage':{serves:'4: 2 dinner + 2 lunches',time:'40 min',ingredients:['24 oz chicken sausage, sliced','2 large sweet potatoes, cubed','2 bell peppers, chopped','12 oz green beans','2 tbsp olive oil','Italian seasoning, salt, and pepper'],steps:['Heat oven to 425°F.','Roast seasoned sweet potatoes with oil for 15 minutes.','Add sausage, peppers, and beans; roast 18–22 minutes more.','Pack 2 lunch portions before serving dinner.'],storage:'Refrigerate up to 4 days and reheat until hot.'},
+  'turkey-tacos':{serves:'4: 2 dinner + 2 lunches',time:'30 min',ingredients:['1½ lb ground turkey','1 can black beans','2 tbsp taco seasoning','12 tortillas','1½ cups shredded cheese','Salsa and avocado'],steps:['Brown turkey in a skillet; drain if needed.','Add seasoning, beans, and ½ cup water; simmer 5 minutes.','Set aside enough filling, tortillas, and toppings for 2 lunches.','Serve the remaining filling with tortillas and toppings.'],storage:'Store filling separately from tortillas and toppings for up to 4 days.'},
+  'sweet-potato-tacos':{serves:'4: 2 dinner + 2 lunches',time:'40 min',ingredients:['2 large sweet potatoes, cubed','2 cans black beans','12 tortillas','3 cups slaw mix','2 avocados','½ cup Greek yogurt','1 lime','Taco seasoning'],steps:['Roast seasoned sweet potatoes at 425°F for 25–30 minutes.','Warm beans with a splash of water and taco seasoning.','Mash avocado with yogurt, lime, and salt.','Pack 2 lunch portions, keeping tortillas separate, then assemble dinner tacos.'],storage:'Refrigerate components separately up to 4 days.'},
+  salmon:{serves:'4: 2 dinner + 2 lunches',time:'35 min',ingredients:['4 salmon fillets, 5–6 oz each','1½ lb potatoes, chopped','1 lb broccoli or asparagus','1 lemon','2 tbsp olive oil','Salt, pepper, and garlic powder'],steps:['Heat oven to 425°F; roast seasoned potatoes for 15 minutes.','Add salmon and vegetables, drizzle with oil, and season.','Roast 12–15 minutes, until salmon flakes easily.','Pack 2 lunch portions before serving.'],storage:'Refrigerate up to 3 days. Reheat gently or enjoy cold.'},
+  'fish-tacos':{serves:'4: 2 dinner + 2 lunches',time:'30 min',ingredients:['1½ lb salmon','12 tortillas','4 cups cabbage slaw','2 avocados','¾ cup Greek yogurt','2 limes','Salt, cumin, and chili powder'],steps:['Season salmon and bake at 425°F for 12–15 minutes.','Mix yogurt with lime juice and salt.','Flake salmon and assemble tacos with slaw, avocado, and sauce.','Reserve 2 portions with tortillas packed separately.'],storage:'Refrigerate salmon and toppings separately up to 3 days.'},
+  burgers:{serves:'4: 2 dinner + 2 lunches',time:'40 min',ingredients:['1½ lb lean beef or turkey','4 burger buns','1½ lb potatoes, cut into wedges','Salad greens','Salt, pepper, and preferred burger toppings'],steps:['Heat oven to 425°F and roast seasoned potato wedges for 30–35 minutes.','Form 4 patties and cook in a skillet or grill until safely done.','Set aside 2 patties and potato portions for lunches.','Serve remaining burgers with salad.'],storage:'Refrigerate patties separately from buns up to 4 days.'},
+  'beef-bowls':{serves:'4: 2 dinner + 2 lunches',time:'35 min',ingredients:['1½ lb thin-sliced beef','2 cups dry rice','1½ lb broccoli','⅓ cup soy sauce','1 tbsp grated ginger','1 tbsp honey','1 tbsp oil'],steps:['Cook rice according to package directions.','Steam or roast broccoli until tender-crisp.','Mix soy sauce, ginger, honey, and ¼ cup water.','Sear beef in oil, add sauce, and simmer 2 minutes.','Build and pack 2 lunch bowls before serving dinner.'],storage:'Refrigerate bowls up to 4 days; reheat until steaming.'},
+  'greek-bowls':{serves:'4: 2 dinner + 2 lunches',time:'35 min',ingredients:['1½ lb chicken','2 cups dry rice or 1½ cups dry quinoa','1 cucumber','1 pint tomatoes','¾ cup feta','¾ cup hummus','¾ cup tzatziki','Greek seasoning'],steps:['Cook rice or quinoa.','Season and cook chicken to 165°F, then slice.','Chop cucumber and tomatoes.','Build 4 bowls; immediately cover and refrigerate 2 for lunch.'],storage:'Keep hummus and tzatziki separate; refrigerate up to 4 days.'},
+  'rice-beans':{serves:'4: 2 dinner + 2 lunches',time:'30 min',ingredients:['2 cups dry rice','2 cans black or pinto beans','1½ cups cheese','Salsa and avocado','Optional: 1 lb chicken or 4 eggs'],steps:['Cook rice according to package directions.','Warm beans with cumin, garlic powder, and a splash of water.','Cook optional chicken or eggs for extra protein.','Pack 2 lunch bowls before setting out dinner toppings.'],storage:'Refrigerate rice and beans up to 4 days; add avocado after reheating.'},
+  'dumpling-soup':{serves:'4',time:'20 min',ingredients:['24–32 frozen dumplings','8 cups broth','2 cups shelled edamame','5 oz spinach','Soy sauce and sesame oil to taste'],steps:['Bring broth to a simmer.','Add dumplings and cook according to package directions.','Stir in edamame and spinach for the final 3 minutes.','Season to taste and serve.'],storage:'Best fresh; refrigerate up to 3 days. Dumplings will soften.'},
+  'turkey-chili':{serves:'8: dinner, lunches + freezer',time:'50 min',ingredients:['2 lb ground turkey','3 cans beans, drained','2 large cans diced tomatoes','1 can corn','2 tbsp chili powder','2 tsp cumin','1 onion, chopped'],steps:['Brown turkey and onion in a large pot.','Add spices and cook 1 minute.','Stir in beans, tomatoes, corn, and 1 cup water.','Simmer uncovered for 30 minutes.','Pack 2 lunches and freeze at least 2 portions before dinner.'],storage:'Refrigerate 4 days or freeze up to 3 months.'},
+  pizza:{serves:'4',time:'30 min',ingredients:['2 pizza crusts','2 cups pizza sauce','3 cups mozzarella','Optional chicken sausage or turkey pepperoni','1 large salad kit'],steps:['Heat oven according to crust directions.','Top crusts with sauce, cheese, and optional protein.','Bake until crisp and bubbling.','Toss salad and serve.'],storage:'Refrigerate leftover pizza up to 4 days.'},
+  shake:{serves:'1',time:'3 min',ingredients:['1 scoop protein powder','10–12 oz milk','Optional banana and ice'],steps:['Blend or shake until smooth.'],storage:'Best immediately.'},
+  cottage:{serves:'1',time:'2 min',ingredients:['1 cup cottage cheese','½–1 cup berries or pineapple'],steps:['Add fruit to cottage cheese and serve.'],storage:'Keep chilled.'},
+  'yogurt-snack':{serves:'1',time:'1 min',ingredients:['1 Greek yogurt cup'],steps:['Open and enjoy.'],storage:'Keep chilled.'},
+  'protein-balls':{serves:'16 balls',time:'15 min + chill',ingredients:['1½ cups oats','¾ cup peanut butter','½ cup protein powder','⅓ cup honey','2–4 tbsp milk'],steps:['Mix everything, adding just enough milk for the mixture to hold together.','Roll into 16 balls.','Chill for 30 minutes.'],storage:'Refrigerate 1 week or freeze up to 2 months.'}
+};
 const defaults={
   Monday:{breakfast:'overnight-oats',lunch:'turkey-wrap',dinner:'sheet-chicken',snack:'shake'},
   Tuesday:{breakfast:'egg-box',lunch:'leftovers',dinner:'turkey-tacos',snack:'yogurt-snack'},
@@ -70,6 +97,9 @@ function renderWeek(){
       sel.innerHTML=optionsFor(type);
       sel.value=state.week[day][type];
       sel.addEventListener('change',e=>{state.week[day][type]=e.target.value;save();renderAll();});
+      const recipeBtn=document.createElement('button');recipeBtn.className='recipe-link';recipeBtn.type='button';recipeBtn.textContent='View recipe';
+      recipeBtn.addEventListener('click',()=>openRecipe(type==='lunch' ? getEffectiveLunch(i).id : state.week[day][type]));
+      sel.closest('.slot').appendChild(recipeBtn);
     });
     const note=node.querySelector('.leftover-note');
     if(state.week[day].lunch==='leftovers'){
@@ -83,9 +113,26 @@ function renderLibrary(){
   const wrap=document.getElementById('mealLibrary');wrap.innerHTML='';
   meals.filter(m=>m.id!=='none' && (type==='all'||m.type===type) && (tag==='all'||m.tags.includes(tag))).forEach(m=>{
     const el=document.createElement('article');el.className='meal-card';
-    el.innerHTML=`<h3>${m.name}</h3><div class="meal-meta"><span class="pill">${m.type}</span>${m.tags.map(t=>`<span class="pill">${t}</span>`).join('')}</div><p>${m.desc}</p><footer><span>~${m.protein}g protein</span><span>${m.ingredients.length} shopping items</span></footer>`;
+    el.tabIndex=0;el.setAttribute('role','button');el.setAttribute('aria-label',`Open recipe for ${m.name}`);
+    el.innerHTML=`<h3>${m.name}</h3><div class="meal-meta"><span class="pill">${m.type}</span>${m.tags.map(t=>`<span class="pill">${t}</span>`).join('')}</div><p>${m.desc}</p><footer><span>~${m.protein}g protein</span><span>Tap for recipe →</span></footer>`;
+    el.addEventListener('click',()=>openRecipe(m.id));el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openRecipe(m.id);}});
     wrap.appendChild(el);
   });
+}
+function openRecipe(id){
+  const meal=mealById[id],recipe=recipes[id];if(!meal||!recipe)return;
+  document.getElementById('recipeType').textContent=meal.type.toUpperCase();
+  document.getElementById('recipeTitle').textContent=meal.name;
+  document.getElementById('recipeDescription').textContent=meal.desc;
+  document.getElementById('recipeStats').innerHTML=`<span><strong>Portion plan:</strong> ${recipe.serves}</span><span><strong>${recipe.time}</strong> total time</span><span><strong>~${meal.protein}g</strong> protein per serving</span>`;
+  const isLeftover=meal.type==='dinner'&&meal.tags.includes('leftover');
+  const callout=document.getElementById('leftoverCallout');
+  callout.classList.toggle('no-leftovers',!isLeftover);
+  callout.innerHTML=isLeftover?'<strong>Cook dinner + tomorrow’s lunch</strong><span>Make all 4 servings—even if 2 feels like enough tonight. Pack the 2 lunch portions before serving dinner.</span>':'<strong>Make what you need today</strong><span>No next-day lunch is planned from this recipe unless you choose to make extra.</span>';
+  document.getElementById('recipeIngredients').innerHTML=recipe.ingredients.map(x=>`<li>${x}</li>`).join('');
+  document.getElementById('recipeSteps').innerHTML=recipe.steps.map(x=>`<li>${x}</li>`).join('');
+  document.getElementById('storageNote').innerHTML=`<strong>Store & reheat</strong><span>${recipe.storage}</span>`;
+  document.getElementById('recipeDialog').showModal();
 }
 function shoppingData(){
   const counts={};
@@ -148,5 +195,7 @@ document.getElementById('resetWeek').addEventListener('click',()=>{state.week=JS
 document.getElementById('mealTypeFilter').addEventListener('change',renderLibrary);document.getElementById('mealTagFilter').addEventListener('change',renderLibrary);
 document.getElementById('clearChecks').addEventListener('click',()=>{state.checks={};save();renderShopping();});document.getElementById('refreshPrep').addEventListener('click',renderPrep);
 document.querySelectorAll('.storeToggle').forEach(cb=>{cb.checked=state.stores.includes(cb.value);cb.addEventListener('change',()=>{state.stores=[...document.querySelectorAll('.storeToggle:checked')].map(x=>x.value);save();renderShopping();});});
+document.getElementById('closeRecipe').addEventListener('click',()=>document.getElementById('recipeDialog').close());
+document.getElementById('recipeDialog').addEventListener('click',e=>{if(e.target.id==='recipeDialog')e.target.close();});
 
 renderAll();

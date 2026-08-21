@@ -106,6 +106,28 @@
     </main>
   </div>
 
+  <dialog id="recipeDialog" class="recipe-dialog" aria-labelledby="recipeTitle">
+    <div class="recipe-sheet">
+      <button id="closeRecipe" class="recipe-close" aria-label="Close recipe">×</button>
+      <p class="eyebrow" id="recipeType"></p>
+      <h2 id="recipeTitle"></h2>
+      <p class="recipe-description" id="recipeDescription"></p>
+      <div class="recipe-stats" id="recipeStats"></div>
+      <div class="leftover-callout" id="leftoverCallout"></div>
+      <div class="recipe-columns">
+        <section>
+          <h3>What you’ll need</h3>
+          <ul id="recipeIngredients" class="recipe-ingredients"></ul>
+        </section>
+        <section>
+          <h3>How to make it</h3>
+          <ol id="recipeSteps" class="recipe-steps"></ol>
+        </section>
+      </div>
+      <div class="storage-note" id="storageNote"></div>
+    </div>
+  </dialog>
+
   <template id="dayTemplate">
     <article class="day-card">
       <div class="day-head"><span class="day-name"></span><span class="protein-badge"></span></div>
