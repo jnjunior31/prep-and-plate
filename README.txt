@@ -1,4 +1,4 @@
-PREP & PLATE v0.2
+PREP & PLATE v0.3 SHARED
 
 Open index.html in a browser to use the prototype.
 
@@ -14,6 +14,9 @@ Included:
 - Tap-to-open recipes for every meal
 - Ingredients, numbered directions, timing, storage, and reheating guidance
 - Prominent dinner-plus-leftovers portion reminders
+- Email magic-link sign-in through Supabase Auth
+- Private household create/join flow with an invite code
+- Realtime meal-plan and shopping-list synchronization across devices
 
-IMPORTANT ABOUT SHARING/SYNC
-This prototype saves to the current browser only (localStorage). To make two phones stay synchronized, the next step is to connect this UI to a hosted database/auth service such as Supabase or Firebase and deploy the app to the web. The UI/data model are already structured so that can be added without redesigning the app.
+SHARING/SYNC
+Run prep-and-plate-supabase-setup.sql in the connected Supabase project before using family sync. Local browser saving remains available while signed out; after sign-in, shared household data is protected by Supabase Row Level Security and synchronized in realtime.

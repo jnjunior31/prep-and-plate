@@ -23,6 +23,37 @@
       </div>
     </header>
 
+    <section class="sync-card" aria-labelledby="syncTitle">
+      <div>
+        <p class="eyebrow">FAMILY SYNC</p>
+        <h2 id="syncTitle">Share the plan across both phones.</h2>
+        <p id="syncStatus">Sign in with your email to connect this device.</p>
+      </div>
+      <div id="signedOutControls" class="sync-controls">
+        <label for="emailInput">Email address</label>
+        <div class="inline-form">
+          <input id="emailInput" type="email" autocomplete="email" placeholder="you@example.com" />
+          <button id="emailSignIn" class="primary">Email me a sign-in link</button>
+        </div>
+      </div>
+      <div id="householdControls" class="sync-controls" hidden>
+        <div class="inline-form">
+          <input id="householdName" type="text" placeholder="The Junior household" />
+          <button id="createHousehold" class="primary">Create household</button>
+        </div>
+        <span class="or-divider">or</span>
+        <div class="inline-form">
+          <input id="inviteCode" type="text" autocomplete="off" placeholder="Invite code" />
+          <button id="joinHousehold" class="secondary">Join household</button>
+        </div>
+      </div>
+      <div id="connectedControls" class="sync-controls connected-controls" hidden>
+        <div><span>Signed in as</span><strong id="signedInEmail"></strong></div>
+        <div><span>Household invite code</span><strong id="householdInviteCode"></strong></div>
+        <button id="signOut" class="secondary">Sign out</button>
+      </div>
+    </section>
+
     <nav class="tabs" aria-label="Prep and Plate sections">
       <button class="tab active" data-tab="week">This Week</button>
       <button class="tab" data-tab="meals">Meal Library</button>
@@ -139,6 +170,7 @@
     </article>
   </template>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 </body>
 </html>

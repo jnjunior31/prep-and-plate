@@ -1,4 +1,8 @@
 const DAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const SUPABASE_URL='https://tvwaldmnlcucqlmaqteu.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable__seNOWj61jtMOze5TMCRfA_vISD16Bk';
+const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+let currentUser=null,currentHousehold=null,realtimeChannel=null,plannerSaveTimer=null,applyingRemoteState=false;
 
 const meals=[
   {id:'overnight-oats',name:'Protein overnight oats',type:'breakfast',protein:32,tags:['quick','kid'],desc:'Oats, Fairlife milk, Greek yogurt, berries; optional scoop of protein.',ingredients:[['rolled oats','Costco'],['Fairlife milk','Fred Meyer'],['Greek yogurt','Costco'],['berries','Costco']]},
@@ -72,7 +76,110 @@ const defaults={
 
 let state=JSON.parse(localStorage.getItem('prepPlateState')||'null') || {week:defaults,target:180,checks:{},stores:['Costco','Trader Joe\'s','Fred Meyer']};
 
-function save(){localStorage.setItem('prepPlateState',JSON.stringify(state));}
+function save(){
+  localStorage.setItem('prepPlateState',JSON.stringify(state));
+  if(currentHousehold&&!applyingRemoteState){
+    clearTimeout(plannerSaveTimer);
+    plannerSaveTimer=setTimeout(pushPlannerState,450);
+  }
+}
+function setSyncStatus(message,mode=''){
+  document.getElementById('syncStatus').textContent=message;
+  document.querySelector('.sync-card').classList.remove('syncing','connected','error');
+  if(mode)document.querySelector('.sync-card').classList.add(mode);
+}
+function showSyncControls(){
+  document.getElementById('signedOutControls').hidden=!!currentUser;
+  document.getElementById('householdControls').hidden=!currentUser||!!currentHousehold;
+  document.getElementById('connectedControls').hidden=!currentUser||!currentHousehold;
+  document.getElementById('signedInEmail').textContent=currentUser?.email||'';
+  document.getElementById('householdInviteCode').textContent=currentHousehold?.invite_code||'';
+}
+async function sendSignInLink(){
+  const email=document.getElementById('emailInput').value.trim();
+  if(!email){setSyncStatus('Enter your email address first.','error');return;}
+  setSyncStatus('Sending your secure sign-in link…','syncing');
+  const {error}=await supabaseClient.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.href.split('#')[0]}});
+  setSyncStatus(error?error.message:'Check your email, then open the sign-in link on this device.',error?'error':'syncing');
+}
+async function createHousehold(){
+  const name=document.getElementById('householdName').value.trim()||'Our household';
+  setSyncStatus('Creating your shared household…','syncing');
+  const {error}=await supabaseClient.rpc('create_household',{household_name:name});
+  if(error){setSyncStatus(error.message,'error');return;}
+  await loadHousehold();
+  await pushPlannerState();
+}
+async function joinHousehold(){
+  const code=document.getElementById('inviteCode').value.trim();
+  if(!code){setSyncStatus('Enter the household invite code.','error');return;}
+  setSyncStatus('Joining the household…','syncing');
+  const {error}=await supabaseClient.rpc('join_household',{code});
+  if(error){setSyncStatus(error.message,'error');return;}
+  await loadHousehold();
+}
+async function loadHousehold(){
+  const {data:membership,error}=await supabaseClient.from('household_members').select('household_id').limit(1).maybeSingle();
+  if(error){setSyncStatus(error.message,'error');return;}
+  if(!membership){currentHousehold=null;showSyncControls();setSyncStatus('Create a household, or enter the invite code from your spouse.');return;}
+  const {data:household,error:householdError}=await supabaseClient.from('households').select('id,name,invite_code').eq('id',membership.household_id).single();
+  if(householdError){setSyncStatus(householdError.message,'error');return;}
+  currentHousehold=household;showSyncControls();
+  await loadSharedState();subscribeToHousehold();
+  setSyncStatus(`Connected to ${household.name}. Changes sync automatically.`,'connected');
+}
+async function loadSharedState(){
+  const [{data:planner},{data:checks}]=await Promise.all([
+    supabaseClient.from('planner_state').select('data').eq('household_id',currentHousehold.id).maybeSingle(),
+    supabaseClient.from('shopping_checks').select('item_key,checked').eq('household_id',currentHousehold.id)
+  ]);
+  applyingRemoteState=true;
+  if(planner?.data)state={...state,...planner.data};
+  state.checks=Object.fromEntries((checks||[]).map(x=>[x.item_key,x.checked]));
+  localStorage.setItem('prepPlateState',JSON.stringify(state));
+  applyingRemoteState=false;renderAll();
+}
+async function pushPlannerState(){
+  if(!currentHousehold)return;
+  const data={week:state.week,target:state.target,stores:state.stores};
+  const {error}=await supabaseClient.from('planner_state').upsert({household_id:currentHousehold.id,data});
+  if(error)setSyncStatus(`Could not sync the planner: ${error.message}`,'error');
+}
+async function pushShoppingCheck(itemKey,checked){
+  if(!currentHousehold)return;
+  const {error}=await supabaseClient.from('shopping_checks').upsert({household_id:currentHousehold.id,item_key:itemKey,checked});
+  if(error)setSyncStatus(`Could not sync the shopping list: ${error.message}`,'error');
+}
+async function clearRemoteChecks(){
+  if(!currentHousehold)return;
+  const {error}=await supabaseClient.from('shopping_checks').delete().eq('household_id',currentHousehold.id);
+  if(error)setSyncStatus(`Could not clear shared checks: ${error.message}`,'error');
+}
+function subscribeToHousehold(){
+  if(realtimeChannel)supabaseClient.removeChannel(realtimeChannel);
+  realtimeChannel=supabaseClient.channel(`household-${currentHousehold.id}`)
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'planner_state',filter:`household_id=eq.${currentHousehold.id}`},payload=>{
+      if(payload.new.updated_by===currentUser.id)return;
+      applyingRemoteState=true;state={...state,...payload.new.data};localStorage.setItem('prepPlateState',JSON.stringify(state));applyingRemoteState=false;renderAll();
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'shopping_checks',filter:`household_id=eq.${currentHousehold.id}`},payload=>{
+      const row=payload.new?.item_key?payload.new:payload.old;
+      if(!row?.item_key)return;
+      if(payload.eventType==='DELETE')delete state.checks[row.item_key];else state.checks[row.item_key]=payload.new.checked;
+      localStorage.setItem('prepPlateState',JSON.stringify(state));renderShopping();
+    }).subscribe();
+}
+async function initializeSupabase(){
+  const {data:{session}}=await supabaseClient.auth.getSession();
+  currentUser=session?.user||null;showSyncControls();
+  if(currentUser)await loadHousehold();
+  supabaseClient.auth.onAuthStateChange((_event,newSession)=>{
+    const newUser=newSession?.user||null;
+    if(newUser?.id===currentUser?.id)return;
+    currentUser=newUser;currentHousehold=null;showSyncControls();
+    if(currentUser)setTimeout(loadHousehold,0);else setSyncStatus('Sign in with your email to connect this device.');
+  });
+}
 function optionsFor(type){
   return meals.filter(m=>m.type===type).map(m=>`<option value="${m.id}">${m.name} · ${m.protein}g</option>`).join('');
 }
@@ -154,7 +261,7 @@ function renderShopping(){
     items.forEach(x=>{
       const key=x.store+'|'+x.item; const row=document.createElement('label');row.className='shop-item'+(state.checks[key]?' checked':'');
       row.innerHTML=`<input type="checkbox" ${state.checks[key]?'checked':''}><span>${x.item}<small>Appears in ${x.count} planned meal${x.count>1?'s':''}</small></span>`;
-      row.querySelector('input').addEventListener('change',e=>{state.checks[key]=e.target.checked;save();renderShopping();}); card.appendChild(row);
+      row.querySelector('input').addEventListener('change',e=>{state.checks[key]=e.target.checked;save();pushShoppingCheck(key,e.target.checked);renderShopping();}); card.appendChild(row);
     });wrap.appendChild(card);
   });
 }
@@ -193,9 +300,15 @@ document.getElementById('proteinTarget').addEventListener('input',e=>{state.targ
 document.getElementById('generateWeek').addEventListener('click',generateWeek);
 document.getElementById('resetWeek').addEventListener('click',()=>{state.week=JSON.parse(JSON.stringify(defaults));save();renderAll();});
 document.getElementById('mealTypeFilter').addEventListener('change',renderLibrary);document.getElementById('mealTagFilter').addEventListener('change',renderLibrary);
-document.getElementById('clearChecks').addEventListener('click',()=>{state.checks={};save();renderShopping();});document.getElementById('refreshPrep').addEventListener('click',renderPrep);
+document.getElementById('clearChecks').addEventListener('click',()=>{state.checks={};save();clearRemoteChecks();renderShopping();});document.getElementById('refreshPrep').addEventListener('click',renderPrep);
 document.querySelectorAll('.storeToggle').forEach(cb=>{cb.checked=state.stores.includes(cb.value);cb.addEventListener('change',()=>{state.stores=[...document.querySelectorAll('.storeToggle:checked')].map(x=>x.value);save();renderShopping();});});
 document.getElementById('closeRecipe').addEventListener('click',()=>document.getElementById('recipeDialog').close());
 document.getElementById('recipeDialog').addEventListener('click',e=>{if(e.target.id==='recipeDialog')e.target.close();});
+document.getElementById('emailSignIn').addEventListener('click',sendSignInLink);
+document.getElementById('emailInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendSignInLink();});
+document.getElementById('createHousehold').addEventListener('click',createHousehold);
+document.getElementById('joinHousehold').addEventListener('click',joinHousehold);
+document.getElementById('signOut').addEventListener('click',async()=>{await supabaseClient.auth.signOut();currentUser=null;currentHousehold=null;if(realtimeChannel)supabaseClient.removeChannel(realtimeChannel);showSyncControls();setSyncStatus('Signed out. This device is no longer syncing.');});
 
 renderAll();
+initializeSupabase();

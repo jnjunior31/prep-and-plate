@@ -1,0 +1,34 @@
+PREP & PLATE v0.3 SHARED — DEPLOYMENT
+
+1. DATABASE
+- In Supabase, open SQL Editor.
+- Paste and run prep-and-plate-supabase-setup.sql.
+- Confirm that Supabase reports success.
+
+2. SIGN-IN REDIRECT
+- In Supabase, open Authentication > URL Configuration.
+- Set Site URL to:
+  https://jnjunior31.github.io/prep-and-plate/
+- Add the same URL under Redirect URLs.
+- Save.
+
+3. GITHUB
+- Unzip prep-and-plate-v0.3-shared.zip.
+- In https://github.com/jnjunior31/prep-and-plate, choose Add file > Upload files.
+- Upload index.html, app.js, styles.css, manifest.json, and README.txt.
+- Commit the files to main.
+- Do not upload a service_role, sb_secret_, or other administrative key.
+
+4. FIRST PHONE
+- Open https://jnjunior31.github.io/prep-and-plate/
+- Enter your email and request a sign-in link.
+- Open the link on the same phone.
+- Create your household.
+- Copy the household invite code shown in the app.
+
+5. SECOND PHONE
+- Open the same site.
+- Sign in with the second person's email.
+- Choose Join household and enter the invite code.
+
+Both phones should then share planner changes and shopping-list checkoffs.
