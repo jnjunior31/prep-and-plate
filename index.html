@@ -24,10 +24,13 @@
     </header>
 
     <section class="sync-card" aria-labelledby="syncTitle">
-      <div>
+      <div class="sync-summary">
+        <div>
         <p class="eyebrow">FAMILY SYNC</p>
         <h2 id="syncTitle">Share the plan across both phones.</h2>
         <p id="syncStatus">Sign in with your email to connect this device.</p>
+        </div>
+        <button id="toggleSyncDetails" class="secondary sync-manage" type="button" hidden>Manage</button>
       </div>
       <div id="signedOutControls" class="sync-controls">
         <label for="emailInput">Email address</label>

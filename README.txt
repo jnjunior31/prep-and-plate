@@ -1,4 +1,4 @@
-PREP & PLATE v0.3 SHARED
+PREP & PLATE v0.3.1 SHARED
 
 Open index.html in a browser to use the prototype.
 
@@ -17,6 +17,7 @@ Included:
 - Email magic-link sign-in through Supabase Auth
 - Private household create/join flow with an invite code
 - Realtime meal-plan and shopping-list synchronization across devices
+- Compact connected sync status and an iPhone-friendly two-row tab layout
 
 SHARING/SYNC
 Run prep-and-plate-supabase-setup.sql in the connected Supabase project before using family sync. Local browser saving remains available while signed out; after sign-in, shared household data is protected by Supabase Row Level Security and synchronized in realtime.

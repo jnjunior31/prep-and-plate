@@ -94,6 +94,7 @@ function showSyncControls(){
   document.getElementById('connectedControls').hidden=!currentUser||!currentHousehold;
   document.getElementById('signedInEmail').textContent=currentUser?.email||'';
   document.getElementById('householdInviteCode').textContent=currentHousehold?.invite_code||'';
+  document.getElementById('toggleSyncDetails').hidden=!currentHousehold;
 }
 async function sendSignInLink(){
   const email=document.getElementById('emailInput').value.trim();
@@ -309,6 +310,12 @@ document.getElementById('emailInput').addEventListener('keydown',e=>{if(e.key===
 document.getElementById('createHousehold').addEventListener('click',createHousehold);
 document.getElementById('joinHousehold').addEventListener('click',joinHousehold);
 document.getElementById('signOut').addEventListener('click',async()=>{await supabaseClient.auth.signOut();currentUser=null;currentHousehold=null;if(realtimeChannel)supabaseClient.removeChannel(realtimeChannel);showSyncControls();setSyncStatus('Signed out. This device is no longer syncing.');});
+document.getElementById('toggleSyncDetails').addEventListener('click',e=>{
+  const card=document.querySelector('.sync-card');
+  const expanded=card.classList.toggle('expanded');
+  e.currentTarget.textContent=expanded?'Done':'Manage';
+  e.currentTarget.setAttribute('aria-expanded',String(expanded));
+});
 
 renderAll();
 initializeSupabase();
