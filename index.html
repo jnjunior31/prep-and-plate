@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#6e5849" />
+  <title>Prep & Plate</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">PLAN ONCE · PREP ONCE · EAT WELL</div>
+        <h1>Prep & Plate</h1>
+        <p class="subhead">A warm, low-fuss family meal planner built around leftovers, protein, and the stores you already use.</p>
+      </div>
+      <div class="protein-card">
+        <span>Daily protein target</span>
+        <strong><span id="proteinTargetLabel">180</span>g</strong>
+        <input id="proteinTarget" type="range" min="100" max="220" step="5" value="180" />
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="Prep and Plate sections">
+      <button class="tab active" data-tab="week">This Week</button>
+      <button class="tab" data-tab="meals">Meal Library</button>
+      <button class="tab" data-tab="shopping">Shopping</button>
+      <button class="tab" data-tab="prep">Sunday Prep</button>
+    </nav>
+
+    <main>
+      <section id="week" class="panel active-panel">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">WEEKLY RHYTHM</p>
+            <h2>Keep breakfast easy. Cook dinner. Let lunch ride the leftovers.</h2>
+          </div>
+          <div class="actions">
+            <button id="generateWeek" class="primary">Generate my week</button>
+            <button id="resetWeek" class="secondary">Reset</button>
+          </div>
+        </div>
+
+        <div class="week-grid" id="weekGrid"></div>
+
+        <div class="tip-card">
+          <strong>Protein for you, normal dinner for everyone.</strong>
+          <p>Use the same family meal, then add an easy protein boost to your plate: Greek yogurt, cottage cheese, eggs, extra chicken, milk, or a shake.</p>
+        </div>
+      </section>
+
+      <section id="meals" class="panel">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">MEAL LIBRARY</p>
+            <h2>Familiar favorites plus a few new ideas.</h2>
+          </div>
+          <div class="filter-row">
+            <select id="mealTypeFilter">
+              <option value="all">All meals</option>
+              <option value="breakfast">Breakfast</option>
+              <option value="lunch">Lunch</option>
+              <option value="dinner">Dinner</option>
+              <option value="snack">Protein boost</option>
+            </select>
+            <select id="mealTagFilter">
+              <option value="all">All styles</option>
+              <option value="quick">Quick</option>
+              <option value="leftover">Leftover-friendly</option>
+              <option value="kid">Kid-friendly</option>
+              <option value="new">Try something new</option>
+            </select>
+          </div>
+        </div>
+        <div id="mealLibrary" class="meal-library"></div>
+      </section>
+
+      <section id="shopping" class="panel">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">SHOPPING LIST</p>
+            <h2>Sorted by Costco, Trader Joe's, and Fred Meyer.</h2>
+          </div>
+          <button id="clearChecks" class="secondary">Clear checked items</button>
+        </div>
+        <div class="store-toggle-row">
+          <label><input type="checkbox" class="storeToggle" value="Costco" checked /> Costco</label>
+          <label><input type="checkbox" class="storeToggle" value="Trader Joe's" checked /> Trader Joe's</label>
+          <label><input type="checkbox" class="storeToggle" value="Fred Meyer" checked /> Fred Meyer</label>
+        </div>
+        <div id="shoppingList" class="shopping-columns"></div>
+      </section>
+
+      <section id="prep" class="panel">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">SUNDAY SETUP</p>
+            <h2>Do a little once so weekdays stay easy.</h2>
+          </div>
+          <button id="refreshPrep" class="secondary">Refresh prep plan</button>
+        </div>
+        <div id="prepList" class="prep-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <template id="dayTemplate">
+    <article class="day-card">
+      <div class="day-head"><span class="day-name"></span><span class="protein-badge"></span></div>
+      <div class="slot"><label>Breakfast</label><select class="meal-select breakfast"></select></div>
+      <div class="slot"><label>Lunch</label><select class="meal-select lunch"></select></div>
+      <div class="slot"><label>Dinner</label><select class="meal-select dinner"></select></div>
+      <div class="slot compact"><label>Protein boost</label><select class="meal-select snack"></select></div>
+      <div class="leftover-note"></div>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name":"Prep & Plate",
+  "short_name":"Prep & Plate",
+  "start_url":"./index.html",
+  "display":"standalone",
+  "background_color":"#f4efe8",
+  "theme_color":"#6e5849",
+  "icons":[]
+}
